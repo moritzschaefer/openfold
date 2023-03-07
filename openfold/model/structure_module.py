@@ -33,8 +33,6 @@ from openfold.utils.rigid_utils import Rigid, Rotation
 from openfold.utils.tensor_utils import (dict_multimap, flatten_final_dims,
                                          permute_final_dims)
 
-attn_core_inplace_cuda = importlib.import_module("attn_core_inplace_cuda")
-
 
 class AngleResnetBlock(nn.Module):
     def __init__(self, c_hidden):
@@ -349,20 +347,10 @@ class InvariantPointAttention(nn.Module):
         # [*, H, N_res, N_res]
         pt_att = permute_final_dims(pt_att, (2, 0, 1))
         
-        if(inplace_safe):
-            a += pt_att
-            del pt_att
-            a += square_mask.unsqueeze(-3)
-            # in-place softmax
-            attn_core_inplace_cuda.forward_(
-                a,
-                reduce(mul, a.shape[:-1]),
-                a.shape[-1],
-            )
-        else:
-            a = a + pt_att 
-            a = a + square_mask.unsqueeze(-3)
-            a = self.softmax(a)
+    
+        a = a + pt_att 
+        a = a + square_mask.unsqueeze(-3)
+        a = self.softmax(a)
 
         ################
         # Compute output
