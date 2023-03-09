@@ -627,6 +627,8 @@ class StructureModule(nn.Module):
         mask=None,
         inplace_safe=False,
         _offload_inference=False,
+        cond_fn=None,
+        cond_type=None,
     ):
         """
         Args:
@@ -680,6 +682,13 @@ class StructureModule(nn.Module):
         outputs = []
         for i in range(self.no_blocks):
             # [*, N, C_s]
+
+            # Assume a Classifier that works on dicts:
+            if cond_fn is not None and cond_type == "sm_before_ipa":
+                gradients = cond_fn(s)
+                s = s + gradients
+                del gradients
+
             if time_embedding is not None:
                 s = s + time_embedding
             s = s + self.ipa(
@@ -691,10 +700,11 @@ class StructureModule(nn.Module):
                 _offload_inference=_offload_inference, 
                 _z_reference_list=z_reference_list
             )
+            
             s = self.ipa_dropout(s)
             s = self.layer_norm_ipa(s)
             s = self.transition(s)
-           
+
             # [*, N]
             rigids = rigids.compose_q_update_vec(self.bb_update(s))
 
