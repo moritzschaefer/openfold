@@ -111,6 +111,7 @@ class AlphaFold(nn.Module):
         self.aux_heads = AuxiliaryHeads(
             self.config["heads"],
         )
+        
 
     def embed_templates(self, batch, z, pair_mask, templ_dim, inplace_safe): 
         if(self.template_config.offload_templates):
@@ -212,7 +213,7 @@ class AlphaFold(nn.Module):
 
         return ret
 
-    def iteration(self, feats, prevs, _recycle=True):
+    def iteration(self, feats, prevs, _recycle=True, cond_fn=None, cond_type=None):
         # Primary output dictionary
         outputs = {}
 
@@ -408,6 +409,13 @@ class AlphaFold(nn.Module):
         outputs["single"] = s
 
         del z
+        
+        # Assume a Classifier that works on dicts:
+        if cond_fn is not None and cond_type=="evo_out":
+            gradients = cond_fn({"pair":outputs["pair"],"single":outputs["single"]})
+            for key in gradients.keys():
+                outputs[key] += gradients[key]
+            del gradients
 
         # Predict 3D structure
         outputs["sm"] = self.structure_module(
@@ -419,6 +427,8 @@ class AlphaFold(nn.Module):
             mask=feats["seq_mask"].to(dtype=s.dtype),
             inplace_safe=inplace_safe,
             _offload_inference=self.globals.offload_inference,
+            cond_fn=cond_fn,
+            cond_type=cond_type,
         )
         outputs["final_atom_positions"] = atom14_to_atom37(
             outputs["sm"]["positions"][-1], feats
@@ -439,7 +449,7 @@ class AlphaFold(nn.Module):
 
         return outputs, m_1_prev, z_prev, x_prev
 
-    def forward(self, batch):
+    def forward(self, batch, cond_fn=None, cond_type=None):
         """
         Args:
             batch:
@@ -515,7 +525,9 @@ class AlphaFold(nn.Module):
                 outputs, m_1_prev, z_prev, x_prev = self.iteration(
                     feats,
                     prevs,
-                    _recycle=(num_iters > 1)
+                    _recycle=(num_iters > 1),
+                    cond_fn=cond_fn,
+                    cond_type=cond_type,
                 )
 
                 if(not is_final_iter):
