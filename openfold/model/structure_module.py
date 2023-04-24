@@ -683,7 +683,7 @@ class StructureModule(nn.Module):
         for i in range(self.no_blocks):
             # [*, N, C_s]
 
-            # Assume a Classifier that works on dicts:
+            # Assume a classifier that works on dicts:
             if cond_fn is not None and cond_type == "sm_before_ipa":
                 gradients = cond_fn(s)
                 s = s + gradients
