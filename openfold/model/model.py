@@ -409,8 +409,8 @@ class AlphaFold(nn.Module):
         outputs["single"] = s
 
         del z
-        
-        # Assume a Classifier that works on dicts:
+
+        # Add conditional gradients ("classifier guidance")
         if cond_fn is not None and cond_type=="evo_out":
             gradients = cond_fn({"pair": outputs["pair"], "single": outputs["single"]}, feats)
             for key in gradients.keys():

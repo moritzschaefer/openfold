@@ -3,8 +3,9 @@ __pycache__/
 *.egg-info
 build
 dist
+*.so
 
 # files from script downloads
-data
+/data
 openfold/resources/
 tests/test_data/
