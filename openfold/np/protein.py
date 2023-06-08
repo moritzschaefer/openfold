@@ -321,7 +321,10 @@ def to_pdb(prot: Protein) -> str:
 
     n = aatype.shape[0]
     atom_index = 1
-    prev_chain_index = 0
+    if(chain_index is not None):
+        prev_chain_index = chain_index[0]
+    else:
+        prev_chain_index = 0
     chain_tags = string.ascii_uppercase
     # Add all atom sites.
     for i in range(n):
@@ -341,7 +344,7 @@ def to_pdb(prot: Protein) -> str:
                 0
             ]  # Protein supports only C, N, O, S, this works.
             charge = ""
-    
+
             chain_tag = "A"
             if(chain_index is not None):
                 chain_tag = chain_tags[chain_index[i]]
